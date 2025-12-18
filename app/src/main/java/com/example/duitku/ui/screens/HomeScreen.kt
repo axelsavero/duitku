@@ -1,6 +1,8 @@
 package com.example.duitku.ui.screens
 
+import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -14,7 +16,10 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.StrokeCap
+import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.duitku.data.model.Transaction
@@ -30,10 +35,10 @@ import androidx.compose.ui.graphics.vector.path
 import com.example.duitku.ui.components.TrendingUp
 import com.example.duitku.ui.components.Trending_down
 
+// --- ICON SECTIONS (Tetap sama seperti sebelumnya) ---
 val Wifi_off: ImageVector
     get() {
         if (_Wifi_off != null) return _Wifi_off!!
-
         _Wifi_off = ImageVector.Builder(
             name = "Wifi_off",
             defaultWidth = 24.dp,
@@ -41,9 +46,7 @@ val Wifi_off: ImageVector
             viewportWidth = 960f,
             viewportHeight = 960f
         ).apply {
-            path(
-                fill = SolidColor(Color(0xFF000000))
-            ) {
+            path(fill = SolidColor(Color(0xFF000000))) {
                 moveTo(790f, 904f)
                 lineTo(414f, 526f)
                 quadToRelative(-47f, 11f, -87.5f, 33f)
@@ -90,18 +93,13 @@ val Wifi_off: ImageVector
                 close()
             }
         }.build()
-
         return _Wifi_off!!
     }
-
 private var _Wifi_off: ImageVector? = null
-
-
 
 val Shield: ImageVector
     get() {
         if (_Shield != null) return _Shield!!
-
         _Shield = ImageVector.Builder(
             name = "Shield",
             defaultWidth = 24.dp,
@@ -109,9 +107,7 @@ val Shield: ImageVector
             viewportWidth = 960f,
             viewportHeight = 960f
         ).apply {
-            path(
-                fill = SolidColor(Color(0xFF000000))
-            ) {
+            path(fill = SolidColor(Color(0xFF000000))) {
                 moveTo(480f, 880f)
                 quadToRelative(-139f, -35f, -229.5f, -159.5f)
                 reflectiveQuadTo(160f, 444f)
@@ -133,16 +129,13 @@ val Shield: ImageVector
                 moveToRelative(0f, -316f)
             }
         }.build()
-
         return _Shield!!
     }
-
 private var _Shield: ImageVector? = null
 
 val Download: ImageVector
     get() {
         if (_Download != null) return _Download!!
-
         _Download = ImageVector.Builder(
             name = "Download",
             defaultWidth = 24.dp,
@@ -150,9 +143,7 @@ val Download: ImageVector
             viewportWidth = 960f,
             viewportHeight = 960f
         ).apply {
-            path(
-                fill = SolidColor(Color(0xFF000000))
-            ) {
+            path(fill = SolidColor(Color(0xFF000000))) {
                 moveTo(480f, 640f)
                 lineTo(280f, 440f)
                 lineToRelative(56f, -58f)
@@ -178,15 +169,12 @@ val Download: ImageVector
                 close()
             }
         }.build()
-
         return _Download!!
     }
-
 private var _Download: ImageVector? = null
 
 
-
-
+// --- MAIN SCREEN ---
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -197,7 +185,7 @@ fun HomeScreen(
     onNavigateToAccounts: () -> Unit,
     onDeleteTransaction: (Transaction) -> Unit
 ) {
-    var selectedTab by remember { mutableStateOf(0) }
+    var selectedTab by remember { mutableStateOf(0) } // 0: Transaksi, 1: Statistik
 
     Scaffold(
         topBar = {
@@ -263,29 +251,34 @@ fun HomeScreen(
                 )
             }
 
+            // Tab Selector
             item {
-                TabRow(
-                    selectedTabIndex = selectedTab,
-                    modifier = Modifier.clip(RoundedCornerShape(12.dp))
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(48.dp)
+                        .clip(RoundedCornerShape(12.dp))
+                        .background(MaterialTheme.colorScheme.surfaceVariant),
+                    verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Tab(
+                    TabButton(
+                        text = "Transaksi",
                         selected = selectedTab == 0,
                         onClick = { selectedTab = 0 },
-                        text = { Text("Transaksi") }
+                        modifier = Modifier.weight(1f)
                     )
-                    Tab(
+                    TabButton(
+                        text = "Statistik",
                         selected = selectedTab == 1,
                         onClick = { selectedTab = 1 },
-                        text = { Text("Statistik") }
+                        modifier = Modifier.weight(1f)
                     )
                 }
             }
 
             if (selectedTab == 0) {
                 if (transactions.isEmpty()) {
-                    item {
-                        EmptyState()
-                    }
+                    item { EmptyState() }
                 } else {
                     val groupedTransactions = transactions.groupBy { it.date }
                     groupedTransactions.forEach { (date, txList) ->
@@ -307,6 +300,7 @@ fun HomeScreen(
                     }
                 }
             } else {
+                // STATISTIK VIEW
                 item {
                     StatisticsView(transactions)
                 }
@@ -318,8 +312,37 @@ fun HomeScreen(
 }
 
 @Composable
+private fun TabButton(
+    text: String,
+    selected: Boolean,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    Box(
+        modifier = modifier
+            .fillMaxHeight()
+            .padding(4.dp)
+            .clip(RoundedCornerShape(10.dp))
+            .background(
+                if (selected) MaterialTheme.colorScheme.background
+                else Color.Transparent
+            )
+            .clickable(onClick = onClick),
+        contentAlignment = Alignment.Center
+    ) {
+        Text(
+            text = text,
+            fontSize = 14.sp,
+            fontWeight = if (selected) FontWeight.SemiBold else FontWeight.Medium,
+            color = if (selected) MaterialTheme.colorScheme.onBackground
+            else MaterialTheme.colorScheme.onSurfaceVariant
+        )
+    }
+}
+
+@Composable
 private fun StatusChip(
-    icon: androidx.compose.ui.graphics.vector.ImageVector,
+    icon: ImageVector,
     text: String,
     color: Color
 ) {
@@ -451,11 +474,38 @@ private fun EmptyState() {
     }
 }
 
+// --- STATISTICS COMPONENTS (CUSTOM CHART) ---
+
+data class ChartData(
+    val category: String,
+    val amount: Double,
+    val percentage: Float,
+    val color: Color
+)
+
 @Composable
 private fun StatisticsView(transactions: List<Transaction>) {
+    // 1. Prepare Data
+    val expenses = transactions.filter { it.type == TransactionType.EXPENSE }
+    val totalExpense = expenses.sumOf { it.amount }
+
+    // Group by category, sum amounts, and map to ChartData
+    val chartData = expenses.groupBy { it.category }
+        .mapValues { (_, list) -> list.sumOf { it.amount } }
+        .map { (category, amount) ->
+            ChartData(
+                category = category,
+                amount = amount,
+                percentage = if (totalExpense > 0) (amount / totalExpense).toFloat() else 0f,
+                color = getCategoryColor(category)
+            )
+        }
+        .sortedByDescending { it.amount } // Sort biggest first
+
     Card(
         modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(16.dp)
+        shape = RoundedCornerShape(16.dp),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface) // Uses theme surface color
     ) {
         Column(
             modifier = Modifier.padding(24.dp),
@@ -463,52 +513,117 @@ private fun StatisticsView(transactions: List<Transaction>) {
         ) {
             Text(
                 text = "Pengeluaran per Kategori",
-                fontSize = 18.sp,
+                fontSize = 16.sp,
                 fontWeight = FontWeight.SemiBold,
-                modifier = Modifier.padding(bottom = 16.dp)
+                color = MaterialTheme.colorScheme.onSurface
             )
 
-            val expenses = transactions.filter { it.type == TransactionType.EXPENSE }
-            val categoryTotals = expenses.groupBy { it.category }
-                .mapValues { (_, txs) -> txs.sumOf { it.amount } }
+            Spacer(modifier = Modifier.height(32.dp))
 
-            if (categoryTotals.isEmpty()) {
+            if (chartData.isEmpty()) {
                 Text(
                     text = "Belum ada pengeluaran",
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.padding(vertical = 32.dp)
                 )
             } else {
-                categoryTotals.forEach { (category, amount) ->
-                    val total = categoryTotals.values.sum()
-                    val percentage = (amount / total * 100).toInt()
+                // 2. Custom Donut Chart
+                DonutChart(
+                    data = chartData,
+                    modifier = Modifier.size(200.dp)
+                )
 
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(vertical = 8.dp),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Box(
-                            modifier = Modifier
-                                .size(12.dp)
-                                .clip(CircleShape)
-                                .background(getCategoryColor(category))
-                        )
-                        Spacer(modifier = Modifier.width(8.dp))
-                        Text(
-                            text = category,
-                            fontSize = 14.sp,
-                            modifier = Modifier.weight(1f)
-                        )
-                        Text(
-                            text = "$percentage%",
-                            fontSize = 14.sp,
-                            fontWeight = FontWeight.Medium
-                        )
+                Spacer(modifier = Modifier.height(32.dp))
+
+                // 3. Grid Legend (2 Columns)
+                Column(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalArrangement = Arrangement.spacedBy(16.dp)
+                ) {
+                    // Chunk data into rows of 2 items
+                    chartData.chunked(2).forEach { rowItems ->
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.spacedBy(16.dp)
+                        ) {
+                            rowItems.forEach { item ->
+                                LegendItem(
+                                    item = item,
+                                    modifier = Modifier.weight(1f)
+                                )
+                            }
+                            // If row has only 1 item, add Spacer to keep alignment
+                            if (rowItems.size == 1) {
+                                Spacer(modifier = Modifier.weight(1f))
+                            }
+                        }
                     }
                 }
             }
         }
+    }
+}
+
+@Composable
+fun DonutChart(
+    data: List<ChartData>,
+    modifier: Modifier = Modifier,
+    thickness: Dp = 40.dp
+) {
+    Canvas(modifier = modifier) {
+        var startAngle = -90f // Start from top (12 o'clock)
+        val strokeWidth = thickness.toPx()
+
+        data.forEach { item ->
+            val sweepAngle = item.percentage * 360f
+
+            drawArc(
+                color = item.color,
+                startAngle = startAngle,
+                sweepAngle = sweepAngle,
+                useCenter = false,
+                style = Stroke(width = strokeWidth, cap = StrokeCap.Butt)
+            )
+
+            startAngle += sweepAngle
+        }
+    }
+}
+
+@Composable
+fun LegendItem(
+    item: ChartData,
+    modifier: Modifier = Modifier
+) {
+    Row(
+        modifier = modifier,
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        // Colored Dot
+        Box(
+            modifier = Modifier
+                .size(10.dp)
+                .clip(CircleShape)
+                .background(item.color)
+        )
+
+        Spacer(modifier = Modifier.width(8.dp))
+
+        // Category Name
+        Text(
+            text = item.category,
+            fontSize = 14.sp,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            modifier = Modifier.weight(1f)
+        )
+
+        // Percentage
+        Text(
+            text = "${(item.percentage * 100).toInt()}%",
+            fontSize = 14.sp,
+            fontWeight = FontWeight.SemiBold,
+            color = MaterialTheme.colorScheme.onSurface
+        )
     }
 }
 
@@ -524,13 +639,13 @@ private fun formatDate(dateString: String): String {
 
 private fun getCategoryColor(category: String): Color {
     return when (category) {
-        "Makanan" -> Color(0xFF10B981)
-        "Transportasi" -> Color(0xFF3B82F6)
-        "Belanja" -> Color(0xFFF59E0B)
-        "Hiburan" -> Color(0xFFEC4899)
-        "Tagihan" -> Color(0xFFEF4444)
-        "Kesehatan" -> Color(0xFF8B5CF6)
-        "Pendidikan" -> Color(0xFF06B6D4)
-        else -> Color(0xFF6B7280)
+        "Makanan" -> Color(0xFF10B981)     // Green
+        "Transportasi" -> Color(0xFF3B82F6)// Blue
+        "Belanja" -> Color(0xFFF59E0B)     // Orange/Yellow
+        "Hiburan" -> Color(0xFFEC4899)     // Pink
+        "Tagihan" -> Color(0xFFEF4444)     // Red
+        "Kesehatan" -> Color(0xFF8B5CF6)   // Purple
+        "Pendidikan" -> Color(0xFF06B6D4)  // Cyan
+        else -> Color(0xFF6B7280)          // Gray
     }
 }
