@@ -224,9 +224,11 @@ fun AccountsScreen(
     totalBalance: Double,
     onNavigateBack: () -> Unit,
     onAddAccount: (name: String, type: AccountType, balance: Double) -> Unit,
+    onEditAccount: (Account) -> Unit,
     onDeleteAccount: (Account) -> Unit
 ) {
     var showAddDialog by remember { mutableStateOf(false) }
+    var accountToEdit by remember { mutableStateOf<Account?>(null) }
 
     Scaffold(
         topBar = {
@@ -350,7 +352,11 @@ fun AccountsScreen(
                 }
             } else {
                 items(accounts) { account ->
-                    AccountItem(account = account, onDelete = { onDeleteAccount(account) })
+                    AccountItem(
+                        account = account,
+                        onEdit = { accountToEdit = account },
+                        onDelete = { onDeleteAccount(account) }
+                    )
                 }
             }
 
@@ -367,10 +373,21 @@ fun AccountsScreen(
             }
         )
     }
+
+    accountToEdit?.let { account ->
+        EditAccountDialog(
+            account = account,
+            onDismiss = { accountToEdit = null },
+            onConfirm = { updatedAccount ->
+                onEditAccount(updatedAccount)
+                accountToEdit = null
+            }
+        )
+    }
 }
 
 @Composable
-private fun AccountItem(account: Account, onDelete: () -> Unit) {
+private fun AccountItem(account: Account, onEdit: () -> Unit, onDelete: () -> Unit) {
     val (icon, backgroundColor) =
         when (account.type) {
             AccountType.EWALLET -> Wallet to Color(0xFF8B5CF6)
@@ -419,6 +436,14 @@ private fun AccountItem(account: Account, onDelete: () -> Unit) {
                     if (account.balance >= 0) MaterialTheme.colorScheme.onSurface
                     else Color(0xFFEF4444)
             )
+
+            IconButton(onClick = onEdit) {
+                Icon(
+                    Icons.Default.Edit,
+                    contentDescription = "Edit",
+                    tint = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
 
             IconButton(onClick = onDelete) {
                 Icon(
@@ -548,3 +573,91 @@ private fun AccountTypeButton(
         }
     }
 }
+
+@Composable
+private fun EditAccountDialog(
+    account: Account,
+    onDismiss: () -> Unit,
+    onConfirm: (Account) -> Unit
+) {
+    var name by remember { mutableStateOf(account.name) }
+    var selectedType by remember { mutableStateOf(account.type) }
+    var balance by remember { mutableStateOf(account.balance.toString()) }
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text("Edit Rekening") },
+        text = {
+            Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
+                // Account Type Selection
+                Text(text = "Jenis Rekening", fontSize = 14.sp, fontWeight = FontWeight.Medium)
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    AccountTypeButton(
+                        type = AccountType.EWALLET,
+                        selected = selectedType == AccountType.EWALLET,
+                        onClick = { selectedType = AccountType.EWALLET },
+                        modifier = Modifier.weight(1f)
+                    )
+                    AccountTypeButton(
+                        type = AccountType.BANK,
+                        selected = selectedType == AccountType.BANK,
+                        onClick = { selectedType = AccountType.BANK },
+                        modifier = Modifier.weight(1f)
+                    )
+                    AccountTypeButton(
+                        type = AccountType.CASH,
+                        selected = selectedType == AccountType.CASH,
+                        onClick = { selectedType = AccountType.CASH },
+                        modifier = Modifier.weight(1f)
+                    )
+                }
+
+                // Account Name
+                OutlinedTextField(
+                    value = name,
+                    onValueChange = { name = it },
+                    label = { Text("Nama Rekening") },
+                    placeholder = { Text("Contoh: BCA, GoPay, Dompet") },
+                    modifier = Modifier.fillMaxWidth()
+                )
+
+                // Balance
+                OutlinedTextField(
+                    value = balance,
+                    onValueChange = { balance = it },
+                    label = { Text("Saldo (Rp)") },
+                    placeholder = { Text("0") },
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                    modifier = Modifier.fillMaxWidth()
+                )
+            }
+        },
+        confirmButton = {
+            Button(
+                onClick = {
+                    if (name.isNotBlank()) {
+                        val (icon, color) = when (selectedType) {
+                            AccountType.EWALLET -> "💳" to "purple"
+                            AccountType.BANK -> "🏦" to "blue"
+                            AccountType.CASH -> "💵" to "green"
+                        }
+                        onConfirm(
+                            account.copy(
+                                name = name,
+                                type = selectedType,
+                                balance = balance.toDoubleOrNull() ?: account.balance,
+                                icon = icon,
+                                color = color
+                            )
+                        )
+                    }
+                }
+            ) { Text("Simpan") }
+        },
+        dismissButton = { TextButton(onClick = onDismiss) { Text("Batal") } }
+    )
+}
+

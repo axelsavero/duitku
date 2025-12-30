@@ -13,8 +13,14 @@ interface TransactionDao {
     @Insert
     suspend fun insertTransaction(transaction: Transaction)
 
+    @Update
+    suspend fun updateTransaction(transaction: Transaction)
+
     @Delete
     suspend fun deleteTransaction(transaction: Transaction)
+
+    @Query("SELECT * FROM transactions WHERE id = :id")
+    suspend fun getTransactionById(id: String): Transaction?
 
     @Query("SELECT * FROM transactions WHERE accountId = :accountId")
     fun getTransactionsByAccount(accountId: String): Flow<List<Transaction>>

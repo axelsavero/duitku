@@ -21,6 +21,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.foundation.text.KeyboardOptions
 import com.example.duitku.data.model.Account
+import com.example.duitku.data.model.Transaction
 import com.example.duitku.data.model.TransactionType
 import com.example.duitku.ui.components.TrendingUp
 import com.example.duitku.ui.components.Trending_down
@@ -31,6 +32,7 @@ import java.time.LocalDate
 @Composable
 fun AddTransactionScreen(
     accounts: List<Account>,
+    transactionToEdit: Transaction? = null,
     onNavigateBack: () -> Unit,
     onNavigateToAccounts: () -> Unit,
     onSaveTransaction: (
@@ -40,14 +42,17 @@ fun AddTransactionScreen(
         description: String,
         date: String,
         accountId: String
-    ) -> Unit
+    ) -> Unit,
+    onUpdateTransaction: ((Transaction) -> Unit)? = null
 ) {
-    var transactionType by remember { mutableStateOf(TransactionType.EXPENSE) }
-    var selectedAccountId by remember { mutableStateOf(accounts.firstOrNull()?.id ?: "") }
-    var amount by remember { mutableStateOf("") }
-    var category by remember { mutableStateOf("") }
-    var description by remember { mutableStateOf("") }
-    var date by remember { mutableStateOf(LocalDate.now().toString()) }
+    val isEditMode = transactionToEdit != null
+    
+    var transactionType by remember { mutableStateOf(transactionToEdit?.type ?: TransactionType.EXPENSE) }
+    var selectedAccountId by remember { mutableStateOf(transactionToEdit?.accountId ?: accounts.firstOrNull()?.id ?: "") }
+    var amount by remember { mutableStateOf(transactionToEdit?.amount?.toString() ?: "") }
+    var category by remember { mutableStateOf(transactionToEdit?.category ?: "") }
+    var description by remember { mutableStateOf(transactionToEdit?.description ?: "") }
+    var date by remember { mutableStateOf(transactionToEdit?.date ?: LocalDate.now().toString()) }
     var showCategoryMenu by remember { mutableStateOf(false) }
     var showAccountMenu by remember { mutableStateOf(false) }
 
@@ -67,7 +72,7 @@ fun AddTransactionScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Tambah Transaksi") },
+                title = { Text(if (isEditMode) "Edit Transaksi" else "Tambah Transaksi") },
                 navigationIcon = {
                     IconButton(onClick = onNavigateBack) {
                         Icon(Icons.Default.ArrowBack, "Kembali")
@@ -273,14 +278,27 @@ fun AddTransactionScreen(
                     onClick = {
                         if (amount.isNotBlank() && category.isNotBlank() &&
                             description.isNotBlank() && selectedAccountId.isNotBlank()) {
-                            onSaveTransaction(
-                                transactionType,
-                                amount.toDoubleOrNull() ?: 0.0,
-                                category,
-                                description,
-                                date,
-                                selectedAccountId
-                            )
+                            if (isEditMode && transactionToEdit != null && onUpdateTransaction != null) {
+                                onUpdateTransaction(
+                                    transactionToEdit.copy(
+                                        type = transactionType,
+                                        amount = amount.toDoubleOrNull() ?: 0.0,
+                                        category = category,
+                                        description = description,
+                                        date = date,
+                                        accountId = selectedAccountId
+                                    )
+                                )
+                            } else {
+                                onSaveTransaction(
+                                    transactionType,
+                                    amount.toDoubleOrNull() ?: 0.0,
+                                    category,
+                                    description,
+                                    date,
+                                    selectedAccountId
+                                )
+                            }
                         }
                     },
                     modifier = Modifier
@@ -289,7 +307,7 @@ fun AddTransactionScreen(
                     shape = RoundedCornerShape(12.dp)
                 ) {
                     Text(
-                        text = "Simpan Transaksi",
+                        text = if (isEditMode) "Simpan Perubahan" else "Simpan Transaksi",
                         fontSize = 16.sp,
                         fontWeight = FontWeight.SemiBold
                     )

@@ -22,8 +22,10 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.example.duitku.data.model.Account
 import com.example.duitku.data.model.Transaction
 import com.example.duitku.data.model.TransactionType
+import com.example.duitku.data.util.CsvExporter
 import com.example.duitku.ui.components.BalanceCard
 import com.example.duitku.ui.components.formatCurrency
 import java.util.Locale
@@ -180,10 +182,13 @@ private var _Download: ImageVector? = null
 @Composable
 fun HomeScreen(
     transactions: List<Transaction>,
+    accounts: List<Account>,
     totalBalance: Double,
     onNavigateToAddTransaction: () -> Unit,
     onNavigateToAccounts: () -> Unit,
-    onDeleteTransaction: (Transaction) -> Unit
+    onEditTransaction: (Transaction) -> Unit,
+    onDeleteTransaction: (Transaction) -> Unit,
+    onExportCsv: (String) -> Unit
 ) {
     var selectedTab by remember { mutableStateOf(0) } // 0: Transaksi, 1: Statistik
 
@@ -218,7 +223,10 @@ fun HomeScreen(
                     IconButton(onClick = onNavigateToAccounts) {
                         Icon(Wallet, "Rekening")
                     }
-                    IconButton(onClick = { /* Export */ }) {
+                    IconButton(onClick = {
+                        val csvContent = CsvExporter.exportTransactionsToCsv(transactions, accounts)
+                        onExportCsv(csvContent)
+                    }) {
                         Icon(Download, "Export")
                     }
                 },
@@ -294,6 +302,7 @@ fun HomeScreen(
                         items(txList) { transaction ->
                             TransactionItem(
                                 transaction = transaction,
+                                onEdit = { onEditTransaction(transaction) },
                                 onDelete = { onDeleteTransaction(transaction) }
                             )
                         }
@@ -367,6 +376,7 @@ private fun StatusChip(
 @Composable
 private fun TransactionItem(
     transaction: Transaction,
+    onEdit: () -> Unit,
     onDelete: () -> Unit
 ) {
     Card(
@@ -432,6 +442,14 @@ private fun TransactionItem(
                         Color(0xFF10B981)
                     else
                         Color(0xFFEF4444)
+                )
+            }
+
+            IconButton(onClick = onEdit) {
+                Icon(
+                    Icons.Default.Edit,
+                    contentDescription = "Edit",
+                    tint = MaterialTheme.colorScheme.onSurfaceVariant
                 )
             }
 

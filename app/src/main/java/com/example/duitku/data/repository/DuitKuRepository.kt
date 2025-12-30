@@ -4,6 +4,7 @@ import com.example.duitku.data.dao.AccountDao
 import com.example.duitku.data.dao.TransactionDao
 import com.example.duitku.data.model.Account
 import com.example.duitku.data.model.Transaction
+import com.example.duitku.data.model.TransactionType
 import kotlinx.coroutines.flow.Flow
 
 class DuitKuRepository(
@@ -18,7 +19,7 @@ class DuitKuRepository(
         // Update account balance
         val account = accountDao.getAccountById(transaction.accountId)
         account?.let {
-            val newBalance = if (transaction.type == com.example.duitku.data.model.TransactionType.INCOME) {
+            val newBalance = if (transaction.type == TransactionType.INCOME) {
                 it.balance + transaction.amount
             } else {
                 it.balance - transaction.amount
@@ -32,7 +33,7 @@ class DuitKuRepository(
         // Reverse balance change
         val account = accountDao.getAccountById(transaction.accountId)
         account?.let {
-            val newBalance = if (transaction.type == com.example.duitku.data.model.TransactionType.INCOME) {
+            val newBalance = if (transaction.type == TransactionType.INCOME) {
                 it.balance - transaction.amount
             } else {
                 it.balance + transaction.amount
@@ -41,11 +42,51 @@ class DuitKuRepository(
         }
     }
 
+    suspend fun updateTransaction(oldTransaction: Transaction, newTransaction: Transaction) {
+        // 1. Reverse old transaction balance
+        val oldAccount = accountDao.getAccountById(oldTransaction.accountId)
+        oldAccount?.let {
+            val oldBalance = if (oldTransaction.type == TransactionType.INCOME) {
+                it.balance - oldTransaction.amount
+            } else {
+                it.balance + oldTransaction.amount
+            }
+            accountDao.updateAccount(it.copy(balance = oldBalance))
+        }
+
+        // 2. Apply new transaction balance
+        val newAccount = accountDao.getAccountById(newTransaction.accountId)
+        newAccount?.let {
+            val newBalance = if (newTransaction.type == TransactionType.INCOME) {
+                it.balance + newTransaction.amount
+            } else {
+                it.balance - newTransaction.amount
+            }
+            accountDao.updateAccount(it.copy(balance = newBalance))
+        }
+
+        // 3. Update transaction record
+        transactionDao.updateTransaction(newTransaction)
+    }
+
+    suspend fun getTransactionById(id: String): Transaction? {
+        return transactionDao.getTransactionById(id)
+    }
+
     suspend fun insertAccount(account: Account) {
         accountDao.insertAccount(account)
+    }
+
+    suspend fun updateAccount(account: Account) {
+        accountDao.updateAccount(account)
+    }
+
+    suspend fun getAccountById(id: String): Account? {
+        return accountDao.getAccountById(id)
     }
 
     suspend fun deleteAccount(account: Account) {
         accountDao.deleteAccount(account)
     }
 }
+
