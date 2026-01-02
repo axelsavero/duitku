@@ -27,6 +27,7 @@ import com.example.duitku.data.util.CsvExporter
 import com.example.duitku.ui.screens.AccountsScreen
 import com.example.duitku.ui.screens.AddTransactionScreen
 import com.example.duitku.ui.screens.HomeScreen
+import com.example.duitku.ui.screens.NotificationSettingScreen
 import kotlinx.coroutines.launch
 
 sealed class Screen(val route: String) {
@@ -36,6 +37,7 @@ sealed class Screen(val route: String) {
         fun createRoute(transactionId: String) = "edit_transaction/$transactionId"
     }
     object Accounts : Screen("accounts")
+    object NotificationSetting : Screen("notification_setting")
 }
 
 @Composable
@@ -83,6 +85,7 @@ fun NavGraph(
                 onNavigateToAccounts = {
                     navController.navigate(Screen.Accounts.route)
                 },
+                onNavigateToNotificationSettings = { navController.navigate(Screen.NotificationSetting.route) },
                 onEditTransaction = { transaction ->
                     navController.navigate(Screen.EditTransaction.createRoute(transaction.id))
                 },
@@ -192,6 +195,12 @@ fun NavGraph(
                         repository.deleteAccount(account)
                     }
                 }
+            )
+        }
+
+        composable(Screen.NotificationSetting.route) {
+            NotificationSettingScreen(
+                onNavigateBack = { navController.popBackStack() }
             )
         }
     }

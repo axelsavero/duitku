@@ -186,6 +186,7 @@ fun HomeScreen(
     totalBalance: Double,
     onNavigateToAddTransaction: () -> Unit,
     onNavigateToAccounts: () -> Unit,
+    onNavigateToNotificationSettings: () -> Unit,
     onEditTransaction: (Transaction) -> Unit,
     onDeleteTransaction: (Transaction) -> Unit,
     onExportCsv: (String) -> Unit
@@ -222,6 +223,12 @@ fun HomeScreen(
                 actions = {
                     IconButton(onClick = onNavigateToAccounts) {
                         Icon(Wallet, "Rekening")
+                    }
+                    IconButton(onClick = onNavigateToNotificationSettings) {
+                        Icon(
+                            imageVector = Icons.Default.Notifications,
+                            contentDescription = "Atur Notifikasi"
+                        )
                     }
                     IconButton(onClick = {
                         val csvContent = CsvExporter.exportTransactionsToCsv(transactions, accounts)
